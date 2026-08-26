@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { Player } from "~~/shared/game/player";
+import type { Player } from "~~/shared/types/game/player";
 
 export const useGameStore = defineStore("game", () => {
   const gameId = ref<string | null>(null);
@@ -8,7 +8,9 @@ export const useGameStore = defineStore("game", () => {
   const currentPlayerId = ref<string | null>(null);
 
   const currentPlayer = computed(() => {
-    return players.value.find((player) => player.id === currentPlayerId.value) ?? null;
+    return players.value.find(
+      (player) => player.id === currentPlayerId.value,
+    ) ?? null;
   });
 
   function setGameId(id: string) {
@@ -17,6 +19,10 @@ export const useGameStore = defineStore("game", () => {
 
   function addPlayer(player: Player) {
     players.value.push(player);
+  }
+
+  function removePlayer(playerId: string) {
+    players.value = players.value.filter((player) => player.id !== playerId);
   }
 
   function setCurrentPlayerId(playerId: string) {
@@ -30,6 +36,7 @@ export const useGameStore = defineStore("game", () => {
     currentPlayer,
     setGameId,
     addPlayer,
+    removePlayer,
     setCurrentPlayerId,
   };
 });

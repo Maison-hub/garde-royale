@@ -15,6 +15,15 @@ useSocketOn(GameServerEvent.playerJoined, (payload) => {
     gameStore.addPlayer(payload.player);
 });
 
+useSocketOn(GameServerEvent.playerLeft, (payload) => {
+    if (payload.gameId !== gameStore.gameId) {
+        return;
+    }
+
+    console.log('Player left:', payload.playerId);
+    gameStore.removePlayer(payload.playerId);
+});
+
 </script>
 
 

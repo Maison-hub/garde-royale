@@ -12,7 +12,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
   io.bind(engine);
 
   io.on("connection", (socket) => {
-    registerGameHandlers(io, socket);
+    registerGameHandlers(socket);
   });
 
   nitroApp.router.use("/socket.io/", defineEventHandler({

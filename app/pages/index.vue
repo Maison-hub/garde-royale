@@ -14,18 +14,20 @@ const createGame = () => {
         return;
     }
     console.log('create game with pseudo:', pseudo.value);
-    socket.emit(GameClientEvent.create, { pseudo: pseudo.value });
-}
+    socket.emit(GameClientEvent.create, { pseudo: pseudo.value }, (response) => {
+        console.log('Create game response:', response);
+        if (!response.success) {
+            console.error(response.error);
+            return;
+        }
 
-useSocketOn(GameServerEvent.created, (payload) => {
-    console.log('Game created with ID:', payload.gameId);
-    gameId.value = payload.gameId;
-    gameStore.setGameId(payload.gameId);
-    gameStore.addPlayer(payload.player);
-    gameStore.setCurrentPlayerId(payload.player.id);
-    // navigate to the /lobby?id=gameId route
-    router.push({ path: '/lobby', query: { id: payload.gameId } });
-});
+        gameId.value = response.gameId;
+        gameStore.setGameId(response.gameId);
+        gameStore.addPlayer(response.player);
+        gameStore.setCurrentPlayerId(response.player.id);
+        router.push({ path: '/lobby', query: { id: response.gameId } });
+    });
+}
 
 const joinGame = () => {
     if (!pseudo.value) {
