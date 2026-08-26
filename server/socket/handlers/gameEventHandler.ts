@@ -16,6 +16,8 @@ import { validateSocketEvent } from "~~/shared/socket/validate-event";
 export function registerGameHandlers(
   socket: Socket<ClientToServerSocketEvents, ServerToClientSocketEvents>,
 ) {
+  const gamePlayers = new Map<string, string>();
+
   socket.on(GameClientEvent.create, (payload, callback) => {
     const result = validateSocketEvent(GameClientEvent.create, payload);
 
@@ -29,10 +31,11 @@ export function registerGameHandlers(
     }
 
     const player = {
-      id: socket.id,
+      id: result.data.playerId,
       pseudo: result.data.pseudo,
     };
-    const game = gameService.createGame(player);
+    const game = gameService.createGame(player, socket.id);
+    gamePlayers.set(game.id, player.id);
 
     // create socket room for the game
     socket.join(game.id);
@@ -44,31 +47,50 @@ export function registerGameHandlers(
     });
   });
 
-  socket.on(GameClientEvent.join, (payload) => {
+  socket.on(GameClientEvent.exists, (payload, callback) => {
+    const result = validateSocketEvent(GameClientEvent.exists, payload);
+
+    callback({
+      exists: result.success && gameService.hasGame(result.data.gameId),
+    });
+  });
+
+  socket.on(GameClientEvent.join, (payload, callback) => {
     const result = validateSocketEvent(GameClientEvent.join, payload);
 
     if (!result.success) {
       console.error("Invalid game:join event", result.error.issues);
+      callback({
+        success: false,
+        error: "Les informations du joueur sont invalides",
+      });
       return;
     }
 
     const player = {
-      id: socket.id,
+      id: result.data.playerId,
       pseudo: result.data.pseudo,
     };
 
-    const game = gameService.joinGame(result.data.gameId, player);
+    const game = gameService.joinGame(result.data.gameId, player, socket.id);
 
     if (!game) {
-      console.error("Game does not exist:", result.data.gameId);
+      callback({
+        success: false,
+        error: "La partie n'existe pas",
+      });
       return;
     }
+
+    gamePlayers.set(game.id, player.id);
 
     // join socket room for the game
     socket.join(game.id);
 
-    socket.emit(GameServerEvent.joined, {
+    callback({
+      success: true,
       gameId: game.id,
+      player,
       players: game.players,
     });
 
@@ -85,7 +107,13 @@ export function registerGameHandlers(
         continue;
       }
 
-      const player = gameService.leaveGame(room, socket.id);
+      const playerId = gamePlayers.get(room);
+
+      if (!playerId) {
+        continue;
+      }
+
+      const player = gameService.leaveGame(room, playerId, socket.id);
 
       if (!player) {
         continue;

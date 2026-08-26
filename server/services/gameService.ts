@@ -5,8 +5,13 @@ import type { Player } from "~~/shared/types/game/player";
 
 export class GameService {
   private readonly games = new Map<string, Game>(); //Map use to store current games in memory, key is gameId, value is Game object
+  private readonly playerSocketIds = new Map<string, string>();
 
-  createGame(hostPlayer: Player, settings: GameSettings = {}): Game {
+  createGame(
+    hostPlayer: Player,
+    socketId: string,
+    settings: GameSettings = {},
+  ): Game {
     let gameId = generateGameId();
 
     while (this.games.has(gameId)) {
@@ -25,6 +30,7 @@ export class GameService {
     };
 
     this.games.set(game.id, game);
+    this.playerSocketIds.set(this.getPlayerKey(game.id, hostPlayer.id), socketId);
 
     return game;
   }
@@ -33,30 +39,50 @@ export class GameService {
     return this.games.get(gameId);
   }
 
-  joinGame(gameId: string, player: Player): Game | undefined {
+  hasGame(gameId: string): boolean {
+    return this.games.has(gameId);
+  }
+
+  joinGame(gameId: string, player: Player, socketId: string): Game | undefined {
     const game = this.games.get(gameId);
 
     if (!game) {
       return undefined;
     }
 
-    const playerAlreadyJoined = game.players.some(
+    const existingPlayer = game.players.find(
       (gamePlayer) => gamePlayer.id === player.id,
     );
 
-    if (!playerAlreadyJoined) {
+    if (existingPlayer) {
+      existingPlayer.pseudo = player.pseudo;
+    } else {
       game.players.push(player);
     }
+
+    this.playerSocketIds.set(this.getPlayerKey(gameId, player.id), socketId);
 
     return game;
   }
 
-  leaveGame(gameId: string, playerId: string): Player | undefined {
+  leaveGame(
+    gameId: string,
+    playerId: string,
+    socketId: string,
+  ): Player | undefined {
     const game = this.games.get(gameId);
 
     if (!game) {
       return undefined;
     }
+
+    const playerKey = this.getPlayerKey(gameId, playerId);
+
+    if (this.playerSocketIds.get(playerKey) !== socketId) {
+      return undefined;
+    }
+
+    this.playerSocketIds.delete(playerKey);
 
     const playerIndex = game.players.findIndex(
       (player) => player.id === playerId,
@@ -72,20 +98,11 @@ export class GameService {
       return undefined;
     }
 
-    if (game.players.length === 0) {
-      this.games.delete(gameId);
-      return player;
-    }
-
-    if (game.hostPlayerId === playerId) {
-      game.hostPlayerId = game.players[0]!.id;
-    }
-
-    if (game.currentPlayerId === playerId) {
-      game.currentPlayerId = game.players[0]?.id;
-    }
-
     return player;
+  }
+
+  private getPlayerKey(gameId: string, playerId: string): string {
+    return `${gameId}:${playerId}`;
   }
 }
 

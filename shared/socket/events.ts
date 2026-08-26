@@ -5,7 +5,10 @@ import {
   gameServerToClientEvents,
   type CreateGamePayload,
   type CreateGameResponse,
+  type GameExistsPayload,
+  type GameExistsResponse,
   type JoinGamePayload,
+  type JoinGameResponse,
 } from "./events/game-events";
 
 // This file register all the socket handlers
@@ -24,7 +27,14 @@ export type ClientToServerSocketEvents = {
     callback: (response: CreateGameResponse) => void,
   ) => void;
   [GameClientEvent.close]: () => void;
-  [GameClientEvent.join]: (payload: JoinGamePayload) => void;
+  [GameClientEvent.exists]: (
+    payload: GameExistsPayload,
+    callback: (response: GameExistsResponse) => void,
+  ) => void;
+  [GameClientEvent.join]: (
+    payload: JoinGamePayload,
+    callback: (response: JoinGameResponse) => void,
+  ) => void;
 };
 
 export type ServerToClientSocketEvents =

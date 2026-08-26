@@ -18,7 +18,20 @@ export const useGameStore = defineStore("game", () => {
   }
 
   function addPlayer(player: Player) {
-    players.value.push(player);
+    const playerIndex = players.value.findIndex(
+      (existingPlayer) => existingPlayer.id === player.id,
+    );
+
+    if (playerIndex === -1) {
+      players.value.push(player);
+      return;
+    }
+
+    players.value[playerIndex] = player;
+  }
+
+  function setPlayers(newPlayers: Player[]) {
+    players.value = newPlayers;
   }
 
   function removePlayer(playerId: string) {
@@ -36,6 +49,7 @@ export const useGameStore = defineStore("game", () => {
     currentPlayer,
     setGameId,
     addPlayer,
+    setPlayers,
     removePlayer,
     setCurrentPlayerId,
   };

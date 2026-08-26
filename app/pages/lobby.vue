@@ -1,14 +1,29 @@
 <script setup lang="ts">
-import { GameServerEvent } from '~~/shared/socket/events/game-events';
+import { GameClientEvent, GameServerEvent } from '~~/shared/socket/events/game-events';
 import {useGameStore} from '~/stores/gameStore';
 
 const route = useRoute()
+const router = useRouter();
 const gameStore = useGameStore();
+const socket = useSocket();
+const routeGameId = typeof route.query.id === 'string' ? route.query.id : null;
 
-if (route.query.id) {
-    gameStore.setGameId(route.query.id as string);
+if (routeGameId) {
+    gameStore.setGameId(routeGameId);
 }
-console.log('Lobby mounted with gameId:', gameStore.gameId);
+
+onMounted(() => {
+    if (!routeGameId) {
+        router.replace({ path: '/', query: { error: "La partie n'existe pas" } });
+        return;
+    }
+
+    socket.emit(GameClientEvent.exists, { gameId: routeGameId }, (response) => {
+        if (!response.exists) {
+            router.replace({ path: '/', query: { error: "La partie n'existe pas" } });
+        }
+    });
+});
 
 useSocketOn(GameServerEvent.playerJoined, (payload) => {
     console.log('Player joined:', payload.player);
@@ -29,13 +44,13 @@ useSocketOn(GameServerEvent.playerLeft, (payload) => {
 
 <template>
     <div>
-        <h1>Partie #{{ gameStore.gameId }}</h1>
+        <h1>Id: #{{ gameStore.gameId }}</h1>
     </div>
     <div>
-        <h2>Joueurs</h2>
+        <h2>Participants</h2>
         <ul>
             <li v-for="player in gameStore.players" :key="player.id">
-                {{ player.pseudo }} <span v-if="player.id == gameStore.currentPlayerId">you</span>
+                {{ player.pseudo }} <span v-if="player.id == gameStore.currentPlayerId">( you )</span>
             </li>
         </ul>
 
