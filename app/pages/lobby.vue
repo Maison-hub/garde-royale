@@ -1,28 +1,98 @@
 <script setup lang="ts">
 import { GameClientEvent, GameServerEvent } from '~~/shared/socket/events/game-events';
 import {useGameStore} from '~/stores/gameStore';
+import {
+    getOrCreatePlayerId,
+    getStoredPlayerPseudo,
+    savePlayerPseudo,
+} from '~/utils/playerIdentity';
 
-const route = useRoute()
+const route = useRoute();
 const router = useRouter();
 const gameStore = useGameStore();
 const socket = useSocket();
 const routeGameId = typeof route.query.id === 'string' ? route.query.id : null;
+const pseudo = ref('');
+const askForPseudo = ref(false);
+let joinedSocketId: string | undefined;
 
 if (routeGameId) {
     gameStore.setGameId(routeGameId);
 }
 
-onMounted(() => {
+function redirectToHome(error: string) {
+    router.replace({ path: '/', query: { error } });
+}
+
+function joinGame() {
     if (!routeGameId) {
-        router.replace({ path: '/', query: { error: "La partie n'existe pas" } });
+        redirectToHome("La partie n'existe pas");
+        return;
+    }
+
+    const playerPseudo = pseudo.value.trim();
+
+    if (!playerPseudo) {
+        askForPseudo.value = true;
+        return;
+    }
+
+    const playerId = getOrCreatePlayerId();
+
+    socket.emit(GameClientEvent.join, {
+        gameId: routeGameId,
+        playerId,
+        pseudo: playerPseudo,
+    }, (response) => {
+        if (!response.success) {
+            redirectToHome(response.error);
+            return;
+        }
+
+        savePlayerPseudo(playerPseudo);
+        gameStore.setGameId(response.gameId);
+        gameStore.setPlayers(response.players);
+        gameStore.setCurrentPlayerId(response.player.id);
+        askForPseudo.value = false;
+        joinedSocketId = socket.id;
+    });
+}
+
+function checkGameAndJoin() {
+    if (!routeGameId) {
+        redirectToHome("La partie n'existe pas");
+        return;
+    }
+
+    if (!socket.connected || joinedSocketId === socket.id) {
         return;
     }
 
     socket.emit(GameClientEvent.exists, { gameId: routeGameId }, (response) => {
         if (!response.exists) {
-            router.replace({ path: '/', query: { error: "La partie n'existe pas" } });
+            redirectToHome("La partie n'existe pas");
+            return;
         }
+
+        const storedPseudo = getStoredPlayerPseudo();
+
+        if (!storedPseudo) {
+            askForPseudo.value = true;
+            return;
+        }
+
+        pseudo.value = storedPseudo;
+        joinGame();
     });
+}
+
+onMounted(() => {
+    socket.on('connect', checkGameAndJoin);
+    checkGameAndJoin();
+});
+
+onBeforeUnmount(() => {
+    socket.off('connect', checkGameAndJoin);
 });
 
 useSocketOn(GameServerEvent.playerJoined, (payload) => {
@@ -43,16 +113,22 @@ useSocketOn(GameServerEvent.playerLeft, (payload) => {
 
 
 <template>
-    <div>
-        <h1>Id: #{{ gameStore.gameId }}</h1>
+    <div v-if="askForPseudo">
+        <h1>Rejoindre la partie #{{ routeGameId }}</h1>
+        <input v-model="pseudo" placeholder="Votre pseudo" @keyup.enter="joinGame" />
+        <button @click="joinGame">Rejoindre</button>
     </div>
-    <div>
-        <h2>Participants</h2>
-        <ul>
-            <li v-for="player in gameStore.players" :key="player.id">
-                {{ player.pseudo }} <span v-if="player.id == gameStore.currentPlayerId">( you )</span>
-            </li>
-        </ul>
-
-    </div>
+    <template v-else>
+        <div>
+            <h1>Id: #{{ gameStore.gameId }}</h1>
+        </div>
+        <div>
+            <h2>Participants</h2>
+            <ul>
+                <li v-for="player in gameStore.players" :key="player.id">
+                    {{ player.pseudo }} <span v-if="player.id == gameStore.currentPlayerId">( you )</span>
+                </li>
+            </ul>
+        </div>
+    </template>
 </template>

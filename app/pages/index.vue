@@ -1,26 +1,38 @@
 <script setup lang="ts">
-import { GameClientEvent, GameServerEvent } from '~~/shared/socket/events/game-events';
+import { GameClientEvent } from '~~/shared/socket/events/game-events';
 import { useGameStore } from '~/stores/gameStore';
+import { getOrCreatePlayerId, savePlayerPseudo } from '~/utils/playerIdentity';
 
 const gameStore = useGameStore();
 const socket = useSocket();
+const route = useRoute();
 const router = useRouter();
 const pseudo = ref('');
 const gameId = ref('');
+const errorMessage = computed(() => {
+    return typeof route.query.error === 'string' ? route.query.error : null;
+});
 
 const createGame = () => {
-    if (!pseudo.value) {
+    const playerPseudo = pseudo.value.trim();
+
+    if (!playerPseudo) {
         alert('Veuillez entrer un pseudo');
         return;
     }
-    console.log('create game with pseudo:', pseudo.value);
-    socket.emit(GameClientEvent.create, { pseudo: pseudo.value }, (response) => {
-        console.log('Create game response:', response);
+
+    const playerId = getOrCreatePlayerId();
+
+    socket.emit(GameClientEvent.create, {
+        playerId,
+        pseudo: playerPseudo,
+    }, (response) => {
         if (!response.success) {
             console.error(response.error);
             return;
         }
 
+        savePlayerPseudo(playerPseudo);
         gameId.value = response.gameId;
         gameStore.setGameId(response.gameId);
         gameStore.addPlayer(response.player);
@@ -30,31 +42,23 @@ const createGame = () => {
 }
 
 const joinGame = () => {
-    if (!pseudo.value) {
+    const playerPseudo = pseudo.value.trim();
+    const requestedGameId = gameId.value.trim().toUpperCase();
+
+    if (!playerPseudo) {
         alert('Veuillez entrer un pseudo');
         return;
     }
-    if (!gameId.value) {
+
+    if (!requestedGameId) {
         alert('Veuillez entrer un ID de partie');
         return;
     }
-    console.log('join game with pseudo:', pseudo.value);
-    socket.emit(GameClientEvent.join, { gameId: gameId.value, pseudo: pseudo.value });
-}
 
-useSocketOn(GameServerEvent.joined, (payload) => {
-    console.log('Joined game with ID:', payload.gameId);
-    gameStore.setGameId(payload.gameId);
-    payload.players.forEach(player => {
-        gameStore.addPlayer(player);
-    });
-    const currentPlayer = payload.players.find(player => player.pseudo === pseudo.value);
-    if (currentPlayer) {
-        gameStore.setCurrentPlayerId(currentPlayer.id);
-    }
-    // navigate to the /lobby?id=gameId route
-    router.push({ path: '/lobby', query: { id: payload.gameId } });
-});
+    getOrCreatePlayerId();
+    savePlayerPseudo(playerPseudo);
+    router.push({ path: '/lobby', query: { id: requestedGameId } });
+}
 
 </script>
 
@@ -62,6 +66,7 @@ useSocketOn(GameServerEvent.joined, (payload) => {
 
     <div>
         <h1>Garde Royale</h1>
+        <p v-if="errorMessage">{{ errorMessage }}</p>
         <div>
             <h2>
                 Choisir un pseudo
