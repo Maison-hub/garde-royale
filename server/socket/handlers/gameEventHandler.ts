@@ -44,6 +44,7 @@ export function registerGameHandlers(
       success: true,
       gameId: game.id,
       player,
+      hostPlayerId: game.hostPlayerId,
     });
   });
 
@@ -92,12 +93,64 @@ export function registerGameHandlers(
       gameId: game.id,
       player,
       players: game.players,
+      hostPlayerId: game.hostPlayerId,
     });
 
     // Notify all players in the room that a new player has joined
     socket.to(game.id).emit(GameServerEvent.playerJoined, {
       gameId: game.id,
-      player,
+      player
+    });
+  });
+
+  socket.on(GameClientEvent.start, (payload, callback) => {
+    const result = validateSocketEvent(GameClientEvent.start, payload);
+
+    if (!result.success) {
+      console.error("Invalid game:start event", result.error.issues);
+      callback({
+        success: false,
+        error: "Les informations de la partie sont invalides",
+      });
+      return;
+    }
+
+    const game = gameService.getGame(result.data.gameId);
+
+    if (!game) {
+      callback({
+        success: false,
+        error: "La partie n'existe pas",
+      });
+      return;
+    }
+
+    const currentPlayerId = gamePlayers.get(result.data.gameId);
+    if (!currentPlayerId) {
+      callback({
+        success: false,
+        error: "Vous ne participez pas à cette partie",
+      });
+      return;
+    }
+    if (currentPlayerId !== game.hostPlayerId) {
+      callback({
+        success: false,
+        error: "Seul l'hôte peut démarrer la partie",
+      });
+      return;
+    }
+
+    game.status = "playing";
+
+
+    // Notify all players in the room that the game has started
+    socket.nsp.to(game.id).emit(GameServerEvent.started, {
+      gameId: game.id,
+    });
+
+    callback({
+      success: true,
     });
   });
 

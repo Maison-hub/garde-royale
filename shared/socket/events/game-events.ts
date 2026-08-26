@@ -8,12 +8,14 @@ export const GameClientEvent = {
   close: "game:close",
   exists: "game:exists",
   join: "game:join",
+  start: "game:start",
 } as const;
 
 export const GameServerEvent = {
   closed: "game:closed",
   playerJoined: "game:player-joined",
   playerLeft: "game:player-left",
+  started: "game:started",
 } as const;
 
 export const createGamePayloadSchema = z.object({
@@ -26,6 +28,7 @@ export const createGameResponseSchema = z.discriminatedUnion("success", [
     success: z.literal(true),
     gameId: z.string(),
     player: playerSchema,
+    hostPlayerId: z.string(),
   }),
   z.object({
     success: z.literal(false),
@@ -45,6 +48,21 @@ export const joinGameResponseSchema = z.discriminatedUnion("success", [
     gameId: z.string(),
     player: playerSchema,
     players: z.array(playerSchema),
+    hostPlayerId: z.string(),
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
+export const gameStartPayloadSchema = z.object({
+  gameId: z.string(),
+});
+
+export const gameStartResponseSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
   }),
   z.object({
     success: z.literal(false),
@@ -62,6 +80,8 @@ export const gameExistsResponseSchema = z.object({
 
 export type CreateGamePayload = z.infer<typeof createGamePayloadSchema>;
 export type CreateGameResponse = z.infer<typeof createGameResponseSchema>;
+export type GameStartPayload = z.infer<typeof gameStartPayloadSchema>;
+export type GameStartResponse = z.infer<typeof gameStartResponseSchema>;
 export type GameExistsPayload = z.infer<typeof gameExistsPayloadSchema>;
 export type GameExistsResponse = z.infer<typeof gameExistsResponseSchema>;
 export type JoinGamePayload = z.infer<typeof joinGamePayloadSchema>;
@@ -75,6 +95,7 @@ export const gameClientToServerEvents = {
   [GameClientEvent.close]: z.void(),
   [GameClientEvent.exists]: gameExistsPayloadSchema,
   [GameClientEvent.join]: joinGamePayloadSchema,
+  [GameClientEvent.start]: gameStartPayloadSchema,
 } satisfies SocketEvents;
 
 /**
@@ -90,4 +111,7 @@ export const gameServerToClientEvents = {
     playerId: z.string(),
   }),
   [GameServerEvent.closed]: z.void(),
+  [GameServerEvent.started]: z.object({
+    gameId: z.string(),
+  }),
 } satisfies SocketEvents;

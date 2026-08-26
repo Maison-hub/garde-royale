@@ -53,6 +53,7 @@ function joinGame() {
         gameStore.setGameId(response.gameId);
         gameStore.setPlayers(response.players);
         gameStore.setCurrentPlayerId(response.player.id);
+        gameStore.setHostPlayerId(response.hostPlayerId);
         askForPseudo.value = false;
         joinedSocketId = socket.id;
     });
@@ -85,6 +86,29 @@ function checkGameAndJoin() {
         joinGame();
     });
 }
+
+function startGame(){
+    if (!gameStore.gameId || !gameStore.currentPlayerId) {
+        return;
+    }
+
+    socket.emit(GameClientEvent.start, { gameId: gameStore.gameId }, (response) => {
+        if (!response.success) {
+            console.error(response.error);
+            return;
+        }
+
+        router.push({ path: '/game', query: { id: gameStore.gameId } });
+    });
+}
+
+useSocketOn(GameServerEvent.started, (payload) => {
+    if (payload.gameId !== gameStore.gameId) {
+        return;
+    }
+
+    router.push({ path: '/game', query: { id: gameStore.gameId } });
+});
 
 onMounted(() => {
     socket.on('connect', checkGameAndJoin);
@@ -127,8 +151,12 @@ useSocketOn(GameServerEvent.playerLeft, (payload) => {
             <ul>
                 <li v-for="player in gameStore.players" :key="player.id">
                     {{ player.pseudo }} <span v-if="player.id == gameStore.currentPlayerId">( you )</span>
+                    <span v-if="player.id == gameStore.hostPlayerId">👑</span>
                 </li>
             </ul>
         </div>
     </template>
+    <div v-if="gameStore.currentPlayerId === gameStore.hostPlayerId">
+        <button @click="startGame">Démarrer la partie</button>
+    </div>
 </template>

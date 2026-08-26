@@ -35,6 +35,10 @@ export type ClientToServerSocketEvents = {
     payload: JoinGamePayload,
     callback: (response: JoinGameResponse) => void,
   ) => void;
+  [GameClientEvent.start]: (
+    payload: { gameId: string },
+    callback: (response: { success: boolean; error?: string }) => void,
+  ) => void;
 };
 
 export type ServerToClientSocketEvents =

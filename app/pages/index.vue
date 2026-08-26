@@ -37,6 +37,7 @@ const createGame = () => {
         gameStore.setGameId(response.gameId);
         gameStore.addPlayer(response.player);
         gameStore.setCurrentPlayerId(response.player.id);
+        gameStore.setHostPlayerId(response.hostPlayerId);
         router.push({ path: '/lobby', query: { id: response.gameId } });
     });
 }

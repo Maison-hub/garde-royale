@@ -6,6 +6,7 @@ export const useGameStore = defineStore("game", () => {
   const gameId = ref<string | null>(null);
   const players = ref<Player[]>([]);
   const currentPlayerId = ref<string | null>(null);
+  const hostPlayerId = ref<string | null>(null);
 
   const currentPlayer = computed(() => {
     return players.value.find(
@@ -42,6 +43,14 @@ export const useGameStore = defineStore("game", () => {
     currentPlayerId.value = playerId;
   }
 
+  function setHostPlayerId(playerId: string) {
+    hostPlayerId.value = playerId;
+  }
+
+  const isHost = computed(() => {
+    return currentPlayerId.value === hostPlayerId.value;
+  });
+
   return {
     gameId,
     players,
@@ -52,5 +61,8 @@ export const useGameStore = defineStore("game", () => {
     setPlayers,
     removePlayer,
     setCurrentPlayerId,
+    hostPlayerId,
+    setHostPlayerId,
+    isHost,
   };
 });
