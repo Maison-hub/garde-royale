@@ -1,5 +1,6 @@
 import type { SocketEvents } from "../events";
 import { z } from "zod";
+import { gameStateSchema } from "~~/shared/types/game/game";
 import { playerSchema } from "~~/shared/types/game/player";
 
 // Événements de partie envoyés par le client au serveur.
@@ -26,9 +27,8 @@ export const createGamePayloadSchema = z.object({
 export const createGameResponseSchema = z.discriminatedUnion("success", [
   z.object({
     success: z.literal(true),
-    gameId: z.string(),
+    game: gameStateSchema,
     player: playerSchema,
-    hostPlayerId: z.string(),
   }),
   z.object({
     success: z.literal(false),
@@ -45,10 +45,8 @@ export const joinGamePayloadSchema = z.object({
 export const joinGameResponseSchema = z.discriminatedUnion("success", [
   z.object({
     success: z.literal(true),
-    gameId: z.string(),
+    game: gameStateSchema,
     player: playerSchema,
-    players: z.array(playerSchema),
-    hostPlayerId: z.string(),
   }),
   z.object({
     success: z.literal(false),
@@ -112,6 +110,6 @@ export const gameServerToClientEvents = {
   }),
   [GameServerEvent.closed]: z.void(),
   [GameServerEvent.started]: z.object({
-    gameId: z.string(),
+    game: gameStateSchema,
   }),
 } satisfies SocketEvents;

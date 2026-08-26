@@ -33,12 +33,10 @@ const createGame = () => {
         }
 
         savePlayerPseudo(playerPseudo);
-        gameId.value = response.gameId;
-        gameStore.setGameId(response.gameId);
-        gameStore.addPlayer(response.player);
+        gameId.value = response.game.id;
+        gameStore.setGameState(response.game);
         gameStore.setCurrentPlayerId(response.player.id);
-        gameStore.setHostPlayerId(response.hostPlayerId);
-        router.push({ path: '/lobby', query: { id: response.gameId } });
+        router.push({ path: '/lobby', query: { id: response.game.id } });
     });
 }
 

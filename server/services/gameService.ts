@@ -1,7 +1,8 @@
 import { generateGameId } from "~~/server/utils/generateGameId";
-import type { Game } from "~~/shared/types/game/game";
+import type { Game } from "~~/server/types/game";
 import type { GameSettings } from "~~/shared/types/game/game-settings";
 import type { Player } from "~~/shared/types/game/player";
+import { Deck } from "~~/server/utils/deck";
 
 export class GameService {
   private readonly games = new Map<string, Game>(); //Map use to store current games in memory, key is gameId, value is Game object
@@ -23,7 +24,7 @@ export class GameService {
       status: "lobby",
       hostPlayerId: hostPlayer.id,
       players: [hostPlayer],
-      deck: [],
+      deck: new Deck(),
       discardedCards: [],
       round: 0,
       settings,

@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import type { GameState } from "~~/shared/types/game/game";
 import type { Player } from "~~/shared/types/game/player";
 
 export const useGameStore = defineStore("game", () => {
@@ -7,6 +8,7 @@ export const useGameStore = defineStore("game", () => {
   const players = ref<Player[]>([]);
   const currentPlayerId = ref<string | null>(null);
   const hostPlayerId = ref<string | null>(null);
+  const gameState = ref<GameState | null>(null);
 
   const currentPlayer = computed(() => {
     return players.value.find(
@@ -18,6 +20,13 @@ export const useGameStore = defineStore("game", () => {
     gameId.value = id;
   }
 
+  function setGameState(newGameState: GameState) {
+    gameState.value = newGameState;
+    gameId.value = newGameState.id;
+    players.value = newGameState.players;
+    hostPlayerId.value = newGameState.hostPlayerId;
+  }
+
   function addPlayer(player: Player) {
     const playerIndex = players.value.findIndex(
       (existingPlayer) => existingPlayer.id === player.id,
@@ -25,18 +34,29 @@ export const useGameStore = defineStore("game", () => {
 
     if (playerIndex === -1) {
       players.value.push(player);
-      return;
+    } else {
+      players.value[playerIndex] = player;
     }
 
-    players.value[playerIndex] = player;
+    if (gameState.value) {
+      gameState.value = { ...gameState.value, players: players.value };
+    }
   }
 
   function setPlayers(newPlayers: Player[]) {
     players.value = newPlayers;
+
+    if (gameState.value) {
+      gameState.value = { ...gameState.value, players: newPlayers };
+    }
   }
 
   function removePlayer(playerId: string) {
     players.value = players.value.filter((player) => player.id !== playerId);
+
+    if (gameState.value) {
+      gameState.value = { ...gameState.value, players: players.value };
+    }
   }
 
   function setCurrentPlayerId(playerId: string) {
@@ -45,6 +65,10 @@ export const useGameStore = defineStore("game", () => {
 
   function setHostPlayerId(playerId: string) {
     hostPlayerId.value = playerId;
+
+    if (gameState.value) {
+      gameState.value = { ...gameState.value, hostPlayerId: playerId };
+    }
   }
 
   const isHost = computed(() => {
@@ -53,10 +77,12 @@ export const useGameStore = defineStore("game", () => {
 
   return {
     gameId,
+    gameState,
     players,
     currentPlayerId,
     currentPlayer,
     setGameId,
+    setGameState,
     addPlayer,
     setPlayers,
     removePlayer,

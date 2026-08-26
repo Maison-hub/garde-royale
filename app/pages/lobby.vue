@@ -50,10 +50,8 @@ function joinGame() {
         }
 
         savePlayerPseudo(playerPseudo);
-        gameStore.setGameId(response.gameId);
-        gameStore.setPlayers(response.players);
+        gameStore.setGameState(response.game);
         gameStore.setCurrentPlayerId(response.player.id);
-        gameStore.setHostPlayerId(response.hostPlayerId);
         askForPseudo.value = false;
         joinedSocketId = socket.id;
     });
@@ -103,10 +101,11 @@ function startGame(){
 }
 
 useSocketOn(GameServerEvent.started, (payload) => {
-    if (payload.gameId !== gameStore.gameId) {
+    if (payload.game.id !== gameStore.gameId) {
         return;
     }
 
+    gameStore.setGameState(payload.game);
     router.push({ path: '/game', query: { id: gameStore.gameId } });
 });
 

@@ -1,5 +1,8 @@
-import type { Socket } from "socket.io";
+import type { Server, Socket } from "socket.io";
 import { gameService } from "~~/server/services/gameService";
+import { roundService } from "~~/server/services/roundService";
+import { broadcastGameStarted } from "~~/server/socket/gameBroadcaster";
+import { toGameState } from "~~/server/mappers/toGameState";
 import type {
   ClientToServerSocketEvents,
   ServerToClientSocketEvents,
@@ -14,6 +17,7 @@ import { validateSocketEvent } from "~~/shared/socket/validate-event";
  * Enregistre les événements Socket.IO liés au cycle de vie d'une partie.
  */
 export function registerGameHandlers(
+  io: Server<ClientToServerSocketEvents, ServerToClientSocketEvents>,
   socket: Socket<ClientToServerSocketEvents, ServerToClientSocketEvents>,
 ) {
   const gamePlayers = new Map<string, string>();
@@ -42,9 +46,8 @@ export function registerGameHandlers(
 
     callback({
       success: true,
-      gameId: game.id,
+      game: toGameState(game),
       player,
-      hostPlayerId: game.hostPlayerId,
     });
   });
 
@@ -90,10 +93,8 @@ export function registerGameHandlers(
 
     callback({
       success: true,
-      gameId: game.id,
+      game: toGameState(game),
       player,
-      players: game.players,
-      hostPlayerId: game.hostPlayerId,
     });
 
     // Notify all players in the room that a new player has joined
@@ -142,12 +143,10 @@ export function registerGameHandlers(
     }
 
     game.status = "playing";
+    roundService.startRound(game);
 
 
-    // Notify all players in the room that the game has started
-    socket.nsp.to(game.id).emit(GameServerEvent.started, {
-      gameId: game.id,
-    });
+    broadcastGameStarted(io, game);
 
     callback({
       success: true,
