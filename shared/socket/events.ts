@@ -9,6 +9,8 @@ import {
   type GameExistsResponse,
   type JoinGamePayload,
   type JoinGameResponse,
+  type PlayCardPayload,
+  type PlayCardResponse,
 } from "./events/game-events";
 
 // This file register all the socket handlers
@@ -38,6 +40,10 @@ export type ClientToServerSocketEvents = {
   [GameClientEvent.start]: (
     payload: { gameId: string },
     callback: (response: { success: boolean; error?: string }) => void,
+  ) => void;
+  [GameClientEvent.playCard]: (
+    payload: PlayCardPayload,
+    callback: (response: PlayCardResponse) => void,
   ) => void;
 };
 

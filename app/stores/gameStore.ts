@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import type { CardId } from "~~/shared/game/cards";
 import type { GameState } from "~~/shared/types/game/game";
 import type { Player } from "~~/shared/types/game/player";
 
@@ -9,6 +10,7 @@ export const useGameStore = defineStore("game", () => {
   const currentPlayerId = ref<string | null>(null);
   const hostPlayerId = ref<string | null>(null);
   const gameState = ref<GameState | null>(null);
+  const hand = ref<CardId[]>([]);
 
   const currentPlayer = computed(() => {
     return players.value.find(
@@ -21,10 +23,18 @@ export const useGameStore = defineStore("game", () => {
   }
 
   function setGameState(newGameState: GameState) {
+    if (gameId.value !== newGameState.id) {
+      hand.value = [];
+    }
+
     gameState.value = newGameState;
     gameId.value = newGameState.id;
     players.value = newGameState.players;
     hostPlayerId.value = newGameState.hostPlayerId;
+  }
+
+  function setHand(cards: CardId[]) {
+    hand.value = [...cards];
   }
 
   function addPlayer(player: Player) {
@@ -78,11 +88,13 @@ export const useGameStore = defineStore("game", () => {
   return {
     gameId,
     gameState,
+    hand,
     players,
     currentPlayerId,
     currentPlayer,
     setGameId,
     setGameState,
+    setHand,
     addPlayer,
     setPlayers,
     removePlayer,

@@ -25,7 +25,7 @@ export class GameService {
       hostPlayerId: hostPlayer.id,
       players: [hostPlayer],
       deck: new Deck(),
-      discardedCards: [],
+      hands: new Map(),
       round: 0,
       settings,
     };
@@ -42,6 +42,10 @@ export class GameService {
 
   hasGame(gameId: string): boolean {
     return this.games.has(gameId);
+  }
+
+  getPlayerSocketId(gameId: string, playerId: string): string | undefined {
+    return this.playerSocketIds.get(this.getPlayerKey(gameId, playerId));
   }
 
   joinGame(gameId: string, player: Player, socketId: string): Game | undefined {

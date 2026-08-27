@@ -1,7 +1,12 @@
 import type { Server, Socket } from "socket.io";
 import { gameService } from "~~/server/services/gameService";
 import { roundService } from "~~/server/services/roundService";
-import { broadcastGameStarted } from "~~/server/socket/gameBroadcaster";
+import { turnService } from "~~/server/services/turnService";
+import {
+  broadcastGameStarted,
+  broadcastPlayerHand,
+  broadcastPlayerHands,
+} from "~~/server/socket/gameBroadcaster";
 import { toGameState } from "~~/server/mappers/toGameState";
 import type {
   ClientToServerSocketEvents,
@@ -49,6 +54,7 @@ export function registerGameHandlers(
       game: toGameState(game),
       player,
     });
+
   });
 
   socket.on(GameClientEvent.exists, (payload, callback) => {
@@ -97,6 +103,9 @@ export function registerGameHandlers(
       player,
     });
 
+    // Lors d'une reconnexion, la main déjà stockée est renvoyée au joueur.
+    broadcastPlayerHand(io, game, player.id);
+
     // Notify all players in the room that a new player has joined
     socket.to(game.id).emit(GameServerEvent.playerJoined, {
       gameId: game.id,
@@ -144,8 +153,9 @@ export function registerGameHandlers(
 
     game.status = "playing";
     roundService.startRound(game);
+    turnService.startTurn(game);
 
-
+    broadcastPlayerHands(io, game);
     broadcastGameStarted(io, game);
 
     callback({

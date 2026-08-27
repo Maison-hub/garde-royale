@@ -10,5 +10,5 @@ import type { Deck } from "~~/server/utils/deck";
  */
 export interface Game extends GameState {
   deck: Deck;
-  discardedCards: CardId[];
+  hands: Map<string, CardId[]>;
 }

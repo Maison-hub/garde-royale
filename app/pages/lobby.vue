@@ -100,6 +100,10 @@ function startGame(){
     });
 }
 
+useSocketOn(GameServerEvent.handUpdated, (payload) => {
+    gameStore.setHand(payload.cards);
+});
+
 useSocketOn(GameServerEvent.started, (payload) => {
     if (payload.game.id !== gameStore.gameId) {
         return;

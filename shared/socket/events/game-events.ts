@@ -1,5 +1,6 @@
 import type { SocketEvents } from "../events";
 import { z } from "zod";
+import { cardIdSchema } from "~~/shared/game/cards";
 import { gameStateSchema } from "~~/shared/types/game/game";
 import { playerSchema } from "~~/shared/types/game/player";
 
@@ -10,13 +11,17 @@ export const GameClientEvent = {
   exists: "game:exists",
   join: "game:join",
   start: "game:start",
+  playCard: "game:play-card",
 } as const;
 
 export const GameServerEvent = {
+  cardPlayed: "game:card-played",
   closed: "game:closed",
+  handUpdated: "game:hand-updated",
   playerJoined: "game:player-joined",
   playerLeft: "game:player-left",
   started: "game:started",
+  turnStarted: "game:turn-started",
 } as const;
 
 export const createGamePayloadSchema = z.object({
@@ -68,6 +73,21 @@ export const gameStartResponseSchema = z.discriminatedUnion("success", [
   }),
 ]);
 
+export const playCardPayloadSchema = z.object({
+  gameId: z.string().min(1),
+  cardIndex: z.number().int().min(0).max(1),
+});
+
+export const playCardResponseSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
 export const gameExistsPayloadSchema = z.object({
   gameId: z.string().min(1),
 });
@@ -80,6 +100,8 @@ export type CreateGamePayload = z.infer<typeof createGamePayloadSchema>;
 export type CreateGameResponse = z.infer<typeof createGameResponseSchema>;
 export type GameStartPayload = z.infer<typeof gameStartPayloadSchema>;
 export type GameStartResponse = z.infer<typeof gameStartResponseSchema>;
+export type PlayCardPayload = z.infer<typeof playCardPayloadSchema>;
+export type PlayCardResponse = z.infer<typeof playCardResponseSchema>;
 export type GameExistsPayload = z.infer<typeof gameExistsPayloadSchema>;
 export type GameExistsResponse = z.infer<typeof gameExistsResponseSchema>;
 export type JoinGamePayload = z.infer<typeof joinGamePayloadSchema>;
@@ -94,12 +116,21 @@ export const gameClientToServerEvents = {
   [GameClientEvent.exists]: gameExistsPayloadSchema,
   [GameClientEvent.join]: joinGamePayloadSchema,
   [GameClientEvent.start]: gameStartPayloadSchema,
+  [GameClientEvent.playCard]: playCardPayloadSchema,
 } satisfies SocketEvents;
 
 /**
  * Événements de partie envoyés par le serveur au client.
  */
 export const gameServerToClientEvents = {
+  [GameServerEvent.cardPlayed]: z.object({
+    gameId: z.string(),
+    playerId: z.string(),
+    card: cardIdSchema,
+  }),
+  [GameServerEvent.handUpdated]: z.object({
+    cards: z.array(cardIdSchema),
+  }),
   [GameServerEvent.playerJoined]: z.object({
     gameId: z.string(),
     player: playerSchema,
@@ -110,6 +141,9 @@ export const gameServerToClientEvents = {
   }),
   [GameServerEvent.closed]: z.void(),
   [GameServerEvent.started]: z.object({
+    game: gameStateSchema,
+  }),
+  [GameServerEvent.turnStarted]: z.object({
     game: gameStateSchema,
   }),
 } satisfies SocketEvents;
