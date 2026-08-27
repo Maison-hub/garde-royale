@@ -8,7 +8,11 @@ import type { Deck } from "~~/server/utils/deck";
  * Ne jamais l'envoyer tel quel à un client : il contient l'état privé de la
  * partie. Utiliser `toGameState` pour produire le contrat partagé.
  */
-export type Game = Omit<GameState, "playedCards"> & {
+export type Game = Omit<GameState, "playedCards" | "roundPlayerStates"> & {
   deck: Deck;
   hands: Map<string, CardId[]>;
+  roundPlayerStates: Map<string, {
+    eliminated: boolean;
+    protected: boolean;
+  }>;
 };

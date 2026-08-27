@@ -36,6 +36,26 @@ export class Deck {
         return this.cards.pop();
     }
 
+    /**
+     * Utilisé par le Prince. Si la pioche est vide, la carte mise de côté au
+     * début de la manche sert de carte de remplacement.
+     */
+    public drawReplacementCard(): CardId | undefined {
+        const card = this.drawCard();
+
+        if (card) {
+            return card;
+        }
+
+        const firedCard = this.firedCard ?? undefined;
+        this.firedCard = null;
+        return firedCard;
+    }
+
+    public isEmpty(): boolean {
+        return this.cards.length === 0;
+    }
+
     public discardCard(playedCard: PlayedCard) {
         this.discardedCards.push(playedCard);
     }

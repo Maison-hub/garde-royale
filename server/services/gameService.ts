@@ -26,6 +26,8 @@ export class GameService {
       players: [hostPlayer],
       deck: new Deck(),
       hands: new Map(),
+      roundPlayerStates: new Map(),
+      roundWinnerIds: [],
       round: 0,
       settings,
     };

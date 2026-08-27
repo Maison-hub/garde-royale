@@ -4,6 +4,11 @@ import { cardIdSchema } from "~~/shared/game/cards";
 import { gameStateSchema } from "~~/shared/types/game/game";
 import { playerSchema } from "~~/shared/types/game/player";
 import { playedCardSchema } from "~~/shared/types/game/played-card";
+import {
+  cardActionSchema,
+  cardPromptSchema,
+  privateEffectResultSchema,
+} from "~~/shared/types/game/card-action";
 
 // Événements de partie envoyés par le client au serveur.
 export const GameClientEvent = {
@@ -13,6 +18,7 @@ export const GameClientEvent = {
   join: "game:join",
   syncLobby: "game:lobby-sync",
   start: "game:start",
+  getCardOptions: "game:get-card-options",
   playCard: "game:play-card",
 } as const;
 
@@ -93,11 +99,29 @@ export const gameStartResponseSchema = z.discriminatedUnion("success", [
 export const playCardPayloadSchema = z.object({
   gameId: z.string().min(1),
   cardIndex: z.number().int().min(0).max(1),
+  action: cardActionSchema,
 });
 
 export const playCardResponseSchema = z.discriminatedUnion("success", [
   z.object({
     success: z.literal(true),
+    privateResult: privateEffectResultSchema.optional(),
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
+export const getCardOptionsPayloadSchema = z.object({
+  gameId: z.string().min(1),
+  cardIndex: z.number().int().min(0).max(1),
+});
+
+export const getCardOptionsResponseSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+    prompt: cardPromptSchema,
   }),
   z.object({
     success: z.literal(false),
@@ -119,6 +143,8 @@ export type GameStartPayload = z.infer<typeof gameStartPayloadSchema>;
 export type GameStartResponse = z.infer<typeof gameStartResponseSchema>;
 export type PlayCardPayload = z.infer<typeof playCardPayloadSchema>;
 export type PlayCardResponse = z.infer<typeof playCardResponseSchema>;
+export type GetCardOptionsPayload = z.infer<typeof getCardOptionsPayloadSchema>;
+export type GetCardOptionsResponse = z.infer<typeof getCardOptionsResponseSchema>;
 export type GameExistsPayload = z.infer<typeof gameExistsPayloadSchema>;
 export type GameExistsResponse = z.infer<typeof gameExistsResponseSchema>;
 export type JoinGamePayload = z.infer<typeof joinGamePayloadSchema>;
@@ -136,6 +162,7 @@ export const gameClientToServerEvents = {
   [GameClientEvent.join]: joinGamePayloadSchema,
   [GameClientEvent.syncLobby]: lobbySyncPayloadSchema,
   [GameClientEvent.start]: gameStartPayloadSchema,
+  [GameClientEvent.getCardOptions]: getCardOptionsPayloadSchema,
   [GameClientEvent.playCard]: playCardPayloadSchema,
 } satisfies SocketEvents;
 

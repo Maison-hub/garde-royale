@@ -39,12 +39,12 @@ export const cards: Record<CardId, CardDefinition> = {
   servante: {
     name: "Servante",
     value: 4,
-    description: "Échange ta carte avec un adversaire.",
+    description: "Tu es protégé jusqu'à ton prochain tour.",
   },
   prince: {
     name: "Prince",
     value: 5,
-    description: "Échange ta carte avec un adversaire.",
+    description: "Choisis un joueur : il défausse sa carte et en pioche une autre.",
   },
   roi: {
     name: "Roi",
@@ -54,11 +54,11 @@ export const cards: Record<CardId, CardDefinition> = {
   comtesse: {
     name: "Comtesse",
     value: 7,
-    description: "Échange ta carte avec un adversaire.",
+    description: "Doit être jouée si tu as aussi le Roi ou le Prince.",
   },
   princesse: {
     name: "Princesse",
     value: 8,
-    description: "Échange ta carte avec un adversaire.",
+    description: "Si tu joues ou défausses cette carte, tu es éliminé de la manche.",
   },
 };

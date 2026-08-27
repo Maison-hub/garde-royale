@@ -17,5 +17,11 @@ export function toGameState(game: Game): GameState {
     round: game.round,
     settings: game.settings,
     playedCards: [...game.deck.getDiscardedCards()],
+    roundPlayerStates: [...game.roundPlayerStates].map(([playerId, state]) => ({
+      playerId,
+      eliminated: state.eliminated,
+      protected: state.protected,
+    })),
+    roundWinnerIds: [...game.roundWinnerIds],
   };
 }

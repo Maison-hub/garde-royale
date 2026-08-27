@@ -1,4 +1,5 @@
 import type { PlayedCard } from "~~/shared/types/game/played-card";
+import type { CardId } from "~~/shared/game/cards";
 import type { Game } from "~~/server/types/game";
 
 /** Gère le cycle d'un tour sans exposer les mains aux clients. */
@@ -17,6 +18,15 @@ export class TurnService {
       throw new Error("Le joueur actif doit avoir exactement une carte");
     }
 
+    const playerState = game.roundPlayerStates.get(playerId);
+
+    if (!playerState || playerState.eliminated) {
+      throw new Error("Le joueur actif est éliminé de cette manche");
+    }
+
+    // La protection de la Servante se termine au début du prochain tour.
+    playerState.protected = false;
+
     const card = game.deck.drawCard();
 
     if (!card) {
@@ -28,8 +38,32 @@ export class TurnService {
 
   /** Joue une des deux cartes du joueur actif et conserve l'autre en main. */
   playCard(game: Game, playerId: string, cardIndex: number): PlayedCard {
+    const card = this.getCardToPlay(game, playerId, cardIndex);
+    const hand = game.hands.get(playerId)!;
+
+    hand.splice(cardIndex, 1);
+    const playedCard = {
+      card,
+      playerId,
+      round: game.round,
+    };
+    game.deck.discardCard(playedCard);
+
+    return playedCard;
+  }
+
+  /** Vérifie qu'une carte peut être jouée, sans modifier la partie. */
+  getCardToPlay(game: Game, playerId: string, cardIndex: number): CardId {
     if (game.currentPlayerId !== playerId) {
       throw new Error("Ce n'est pas le tour de ce joueur");
+    }
+
+    if (game.roundWinnerIds.length > 0) {
+      throw new Error("Cette manche est terminée");
+    }
+
+    if (game.roundPlayerStates.get(playerId)?.eliminated) {
+      throw new Error("Ce joueur est éliminé de la manche");
     }
 
     const hand = game.hands.get(playerId);
@@ -44,15 +78,14 @@ export class TurnService {
       throw new Error("La carte choisie est invalide");
     }
 
-    hand.splice(cardIndex, 1);
-    const playedCard = {
-      card,
-      playerId,
-      round: game.round,
-    };
-    game.deck.discardCard(playedCard);
+    const mustPlayCountess = hand.includes("comtesse")
+      && (hand.includes("roi") || hand.includes("prince"));
 
-    return playedCard;
+    if (mustPlayCountess && card !== "comtesse") {
+      throw new Error("Vous devez jouer la Comtesse avec un Roi ou un Prince");
+    }
+
+    return card;
   }
 
   /** Passe le tour au joueur suivant et retourne son identifiant. */
@@ -71,7 +104,18 @@ export class TurnService {
       throw new Error("Le joueur actif ne participe pas à cette partie");
     }
 
-    const nextPlayer = game.players[(currentPlayerIndex + 1) % game.players.length];
+    let nextPlayer;
+
+    for (let distance = 1; distance <= game.players.length; distance += 1) {
+      const candidate = game.players[
+        (currentPlayerIndex + distance) % game.players.length
+      ];
+
+      if (candidate && !game.roundPlayerStates.get(candidate.id)?.eliminated) {
+        nextPlayer = candidate;
+        break;
+      }
+    }
 
     if (!nextPlayer) {
       throw new Error("Impossible de trouver le joueur suivant");
