@@ -1,8 +1,9 @@
 import type { CardId } from "~~/shared/game/cards";
+import type { PlayedCard } from "~~/shared/types/game/played-card";
 
 export class Deck {
     private cards: CardId[] = [];
-    private discardedCards: CardId[] = [];
+    private discardedCards: PlayedCard[] = [];
     private firedCard: CardId | null = null;
 
     constructor() {
@@ -35,8 +36,12 @@ export class Deck {
         return this.cards.pop();
     }
 
-    public discardCard(card: CardId) {
-        this.discardedCards.push(card);
+    public discardCard(playedCard: PlayedCard) {
+        this.discardedCards.push(playedCard);
+    }
+
+    public getDiscardedCards(): readonly PlayedCard[] {
+        return [...this.discardedCards];
     }
 
     public shuffle() {

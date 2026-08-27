@@ -46,7 +46,7 @@ export function registerTurnHandlers(
       const nextPlayerId = turnService.endTurn(game);
       turnService.startTurn(game);
 
-      broadcastCardPlayed(io, game, playerId, playedCard);
+      broadcastCardPlayed(io, game, playedCard);
       broadcastPlayerHand(io, game, playerId);
       broadcastPlayerHand(io, game, nextPlayerId);
     } catch (error) {

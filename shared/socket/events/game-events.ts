@@ -3,6 +3,7 @@ import { z } from "zod";
 import { cardIdSchema } from "~~/shared/game/cards";
 import { gameStateSchema } from "~~/shared/types/game/game";
 import { playerSchema } from "~~/shared/types/game/player";
+import { playedCardSchema } from "~~/shared/types/game/played-card";
 
 // Événements de partie envoyés par le client au serveur.
 export const GameClientEvent = {
@@ -144,8 +145,7 @@ export const gameClientToServerEvents = {
 export const gameServerToClientEvents = {
   [GameServerEvent.cardPlayed]: z.object({
     gameId: z.string(),
-    playerId: z.string(),
-    card: cardIdSchema,
+    playedCard: playedCardSchema,
   }),
   [GameServerEvent.handUpdated]: z.object({
     cards: z.array(cardIdSchema),

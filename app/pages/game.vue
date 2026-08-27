@@ -28,9 +28,19 @@ function playCard(cardIndex: number) {
   });
 }
 
+function getPlayerPseudo(playerId: string) {
+  return gameStore.players.find((player) => player.id === playerId)?.pseudo ?? "Joueur inconnu";
+}
+
 useSocketOn(GameServerEvent.handUpdated, (payload) => {
   console.log("Received hand update:", payload);
   gameStore.setHand(payload.cards);
+});
+
+useSocketOn(GameServerEvent.cardPlayed, (payload) => {
+  if (payload.gameId === gameStore.gameId) {
+    gameStore.addPlayedCard(payload.playedCard);
+  }
 });
 
 useSocketOn(GameServerEvent.turnStarted, (payload) => {
@@ -66,6 +76,16 @@ useSocketOn(GameServerEvent.turnStarted, (payload) => {
         <li v-for="(card, cardIndex) in gameStore.hand" :key="`${card}-${cardIndex}`">
           {{ card }}
           <button v-if="isCurrentTurn" @click="playCard(cardIndex)">Jouer</button>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Cartes jouées</h2>
+      <p v-if="gameStore.playedCards.length === 0">Aucune carte jouée.</p>
+      <ul v-else>
+        <li v-for="(playedCard, index) in gameStore.playedCards" :key="`${playedCard.playerId}-${playedCard.card}-${index}`">
+          {{ getPlayerPseudo(playedCard.playerId) }} a joué {{ playedCard.card }}
         </li>
       </ul>
     </section>

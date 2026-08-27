@@ -1,4 +1,4 @@
-import type { CardId } from "~~/shared/game/cards";
+import type { PlayedCard } from "~~/shared/types/game/played-card";
 import type { Game } from "~~/server/types/game";
 
 /** Gère le cycle d'un tour sans exposer les mains aux clients. */
@@ -27,7 +27,7 @@ export class TurnService {
   }
 
   /** Joue une des deux cartes du joueur actif et conserve l'autre en main. */
-  playCard(game: Game, playerId: string, cardIndex: number): CardId {
+  playCard(game: Game, playerId: string, cardIndex: number): PlayedCard {
     if (game.currentPlayerId !== playerId) {
       throw new Error("Ce n'est pas le tour de ce joueur");
     }
@@ -38,13 +38,18 @@ export class TurnService {
       throw new Error("Le joueur actif doit avoir exactement deux cartes");
     }
 
-    const playedCard = hand[cardIndex];
+    const card = hand[cardIndex];
 
-    if (!playedCard) {
+    if (!card) {
       throw new Error("La carte choisie est invalide");
     }
 
     hand.splice(cardIndex, 1);
+    const playedCard = {
+      card,
+      playerId,
+      round: game.round,
+    };
     game.deck.discardCard(playedCard);
 
     return playedCard;

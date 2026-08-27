@@ -16,5 +16,6 @@ export function toGameState(game: Game): GameState {
     currentPlayerId: game.currentPlayerId,
     round: game.round,
     settings: game.settings,
+    playedCards: [...game.deck.getDiscardedCards()],
   };
 }

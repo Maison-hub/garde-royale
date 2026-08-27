@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import type { CardId } from "~~/shared/game/cards";
 import type { GameState } from "~~/shared/types/game/game";
 import type { Player } from "~~/shared/types/game/player";
+import type { PlayedCard } from "~~/shared/types/game/played-card";
 
 export const useGameStore = defineStore("game", () => {
   const gameId = ref<string | null>(null);
@@ -17,6 +18,7 @@ export const useGameStore = defineStore("game", () => {
       (player) => player.id === currentPlayerId.value,
     ) ?? null;
   });
+  const playedCards = computed(() => gameState.value?.playedCards ?? []);
 
   function setGameId(id: string) {
     gameId.value = id;
@@ -35,6 +37,17 @@ export const useGameStore = defineStore("game", () => {
 
   function setHand(cards: CardId[]) {
     hand.value = [...cards];
+  }
+
+  function addPlayedCard(playedCard: PlayedCard) {
+    if (!gameState.value) {
+      return;
+    }
+
+    gameState.value = {
+      ...gameState.value,
+      playedCards: [...gameState.value.playedCards, playedCard],
+    };
   }
 
   function addPlayer(player: Player) {
@@ -92,9 +105,11 @@ export const useGameStore = defineStore("game", () => {
     players,
     currentPlayerId,
     currentPlayer,
+    playedCards,
     setGameId,
     setGameState,
     setHand,
+    addPlayedCard,
     addPlayer,
     setPlayers,
     removePlayer,

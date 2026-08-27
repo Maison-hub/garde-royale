@@ -1,5 +1,4 @@
 import type { Server } from "socket.io";
-import type { CardId } from "~~/shared/game/cards";
 import type {
   ClientToServerSocketEvents,
   ServerToClientSocketEvents,
@@ -8,6 +7,7 @@ import { gameService } from "~~/server/services/gameService";
 import { GameServerEvent } from "~~/shared/socket/events/game-events";
 import { toGameState } from "~~/server/mappers/toGameState";
 import type { Game } from "~~/server/types/game";
+import type { PlayedCard } from "~~/shared/types/game/played-card";
 
 /**
  * Envoie les événements de partie aux joueurs concernés.
@@ -35,13 +35,11 @@ export function broadcastTurnStarted(
 export function broadcastCardPlayed(
   io: Server<ClientToServerSocketEvents, ServerToClientSocketEvents>,
   game: Game,
-  playerId: string,
-  card: CardId,
+  playedCard: PlayedCard,
 ) {
   io.to(game.id).emit(GameServerEvent.cardPlayed, {
     gameId: game.id,
-    playerId,
-    card,
+    playedCard,
   });
 }
 

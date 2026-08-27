@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { gameSettingsSchema } from "./game-settings";
 import { playerSchema } from "./player";
+import { playedCardSchema } from "./played-card";
 
 /**
  * État d'une partie visible par le client.
@@ -16,6 +17,7 @@ export const gameStateSchema = z.object({
   currentPlayerId: z.string().optional(),
   round: z.number().int().nonnegative(),
   settings: gameSettingsSchema,
+  playedCards: z.array(playedCardSchema),
 });
 
 export type GameState = z.infer<typeof gameStateSchema>;
