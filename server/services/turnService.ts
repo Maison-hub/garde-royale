@@ -104,18 +104,10 @@ export class TurnService {
       throw new Error("Le joueur actif ne participe pas à cette partie");
     }
 
-    let nextPlayer;
-
-    for (let distance = 1; distance <= game.players.length; distance += 1) {
-      const candidate = game.players[
-        (currentPlayerIndex + distance) % game.players.length
-      ];
-
-      if (candidate && !game.roundPlayerStates.get(candidate.id)?.eliminated) {
-        nextPlayer = candidate;
-        break;
-      }
-    }
+    const nextPlayer = this.findNextActivePlayer(
+      game,
+      currentPlayerIndex + 1,
+    );
 
     if (!nextPlayer) {
       throw new Error("Impossible de trouver le joueur suivant");
@@ -124,6 +116,32 @@ export class TurnService {
     game.currentPlayerId = nextPlayer.id;
 
     return nextPlayer.id;
+  }
+
+  /** Choisit le joueur suivant quand le joueur actif vient d'être exclu. */
+  moveTurnAfterRemovedPlayer(game: Game, removedPlayerIndex: number): string {
+    const nextPlayer = this.findNextActivePlayer(game, removedPlayerIndex);
+
+    if (!nextPlayer) {
+      throw new Error("Impossible de trouver le joueur suivant");
+    }
+
+    game.currentPlayerId = nextPlayer.id;
+    return nextPlayer.id;
+  }
+
+  private findNextActivePlayer(game: Game, startIndex: number) {
+    for (let distance = 0; distance < game.players.length; distance += 1) {
+      const candidate = game.players[
+        (startIndex + distance) % game.players.length
+      ];
+
+      if (candidate && !game.roundPlayerStates.get(candidate.id)?.eliminated) {
+        return candidate;
+      }
+    }
+
+    return undefined;
   }
 }
 

@@ -21,6 +21,13 @@ export const useGameStore = defineStore("game", () => {
   const playedCards = computed(() => gameState.value?.playedCards ?? []);
 
   function setGameId(id: string) {
+    if (gameId.value !== id) {
+      gameState.value = null;
+      players.value = [];
+      hostPlayerId.value = null;
+      hand.value = [];
+    }
+
     gameId.value = id;
   }
 
@@ -94,6 +101,15 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
+  function clearGame() {
+    gameId.value = null;
+    players.value = [];
+    currentPlayerId.value = null;
+    hostPlayerId.value = null;
+    gameState.value = null;
+    hand.value = [];
+  }
+
   const isHost = computed(() => {
     return currentPlayerId.value === hostPlayerId.value;
   });
@@ -116,6 +132,7 @@ export const useGameStore = defineStore("game", () => {
     setCurrentPlayerId,
     hostPlayerId,
     setHostPlayerId,
+    clearGame,
     isHost,
   };
 });

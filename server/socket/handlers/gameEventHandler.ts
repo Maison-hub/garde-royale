@@ -4,8 +4,10 @@ import { roundService } from "~~/server/services/roundService";
 import { turnService } from "~~/server/services/turnService";
 import {
   broadcastGameStarted,
+  broadcastCardPlayed,
   broadcastPlayerHand,
   broadcastPlayerHands,
+  broadcastTurnStarted,
 } from "~~/server/socket/gameBroadcaster";
 import { toGameState } from "~~/server/mappers/toGameState";
 import type {
@@ -42,6 +44,7 @@ export function registerGameHandlers(
     const player = {
       id: result.data.playerId,
       pseudo: result.data.pseudo,
+      connected: true,
     };
     const game = gameService.createGame(player, socket.id);
     gamePlayers.set(game.id, player.id);
@@ -104,9 +107,40 @@ export function registerGameHandlers(
       return;
     }
 
+    const requestedGame = gameService.getGame(result.data.gameId);
+
+    if (!requestedGame) {
+      callback({
+        success: false,
+        error: "La partie n'existe pas",
+      });
+      return;
+    }
+
+    if (requestedGame.excludedPlayerIds.has(result.data.playerId)) {
+      callback({
+        success: false,
+        error: "Vous avez été exclu de cette partie",
+      });
+      return;
+    }
+
+    const existingPlayer = requestedGame.players.find(
+      (gamePlayer) => gamePlayer.id === result.data.playerId,
+    );
+
+    if (requestedGame.status !== "lobby" && !existingPlayer) {
+      callback({
+        success: false,
+        error: "La partie a déjà commencé",
+      });
+      return;
+    }
+
     const player = {
       id: result.data.playerId,
       pseudo: result.data.pseudo,
+      connected: true,
     };
 
     const game = gameService.joinGame(result.data.gameId, player, socket.id);
@@ -133,11 +167,95 @@ export function registerGameHandlers(
     // Lors d'une reconnexion, la main déjà stockée est renvoyée au joueur.
     broadcastPlayerHand(io, game, player.id);
 
-    // Notify all players in the room that a new player has joined
-    socket.to(game.id).emit(GameServerEvent.playerJoined, {
+    if (existingPlayer) {
+      socket.to(game.id).emit(GameServerEvent.playerUpdated, {
+        gameId: game.id,
+        player: existingPlayer,
+      });
+    } else {
+      socket.to(game.id).emit(GameServerEvent.playerJoined, {
+        gameId: game.id,
+        player,
+      });
+    }
+  });
+
+  socket.on(GameClientEvent.kickPlayer, (payload, callback) => {
+    const result = validateSocketEvent(GameClientEvent.kickPlayer, payload);
+
+    if (!result.success) {
+      callback({ success: false, error: "La demande d'exclusion est invalide" });
+      return;
+    }
+
+    const game = gameService.getGame(result.data.gameId);
+    const requesterId = gamePlayers.get(result.data.gameId);
+
+    if (!game || !requesterId) {
+      callback({ success: false, error: "Vous ne participez pas à cette partie" });
+      return;
+    }
+
+    if (
+      requesterId !== game.hostPlayerId
+      || gameService.getPlayerSocketId(game.id, requesterId) !== socket.id
+    ) {
+      callback({ success: false, error: "Seul l'hôte peut exclure un joueur" });
+      return;
+    }
+
+    if (game.roundWinnerIds.length > 0) {
+      callback({ success: false, error: "La manche est déjà terminée" });
+      return;
+    }
+
+    if (result.data.targetPlayerId === game.hostPlayerId) {
+      callback({ success: false, error: "L'hôte ne peut pas s'exclure lui-même" });
+      return;
+    }
+
+    const removedPlayer = gameService.removePlayer(
+      game.id,
+      result.data.targetPlayerId,
+    );
+
+    if (!removedPlayer) {
+      callback({ success: false, error: "Ce joueur n'est pas dans la partie" });
+      return;
+    }
+
+    if (removedPlayer.socketId) {
+      io.to(removedPlayer.socketId).emit(GameServerEvent.kicked, {
+        gameId: game.id,
+      });
+      io.sockets.sockets.get(removedPlayer.socketId)?.leave(game.id);
+    }
+
+    io.to(game.id).emit(GameServerEvent.playerLeft, {
       gameId: game.id,
-      player
+      playerId: removedPlayer.player.id,
     });
+
+    for (const playedCard of removedPlayer.playedCards) {
+      broadcastCardPlayed(io, game, playedCard);
+    }
+
+    if (game.status === "playing") {
+      const winnerIds = roundService.findRoundWinners(game);
+
+      if (winnerIds.length > 0) {
+        game.roundWinnerIds = winnerIds;
+        game.currentPlayerId = undefined;
+      } else if (removedPlayer.wasCurrentPlayer) {
+        turnService.moveTurnAfterRemovedPlayer(game, removedPlayer.playerIndex);
+        turnService.startTurn(game);
+      }
+
+      broadcastPlayerHands(io, game);
+      broadcastTurnStarted(io, game);
+    }
+
+    callback({ success: true });
   });
 
   socket.on(GameClientEvent.start, (payload, callback) => {
@@ -162,6 +280,22 @@ export function registerGameHandlers(
       return;
     }
 
+    if (game.status !== "lobby") {
+      callback({
+        success: false,
+        error: "La partie a déjà commencé",
+      });
+      return;
+    }
+
+    if (game.players.some((player) => !player.connected)) {
+      callback({
+        success: false,
+        error: "Tous les joueurs doivent être connectés avant de démarrer",
+      });
+      return;
+    }
+
     const currentPlayerId = gamePlayers.get(result.data.gameId);
     if (!currentPlayerId) {
       callback({
@@ -170,7 +304,10 @@ export function registerGameHandlers(
       });
       return;
     }
-    if (currentPlayerId !== game.hostPlayerId) {
+    if (
+      currentPlayerId !== game.hostPlayerId
+      || gameService.getPlayerSocketId(game.id, currentPlayerId) !== socket.id
+    ) {
       callback({
         success: false,
         error: "Seul l'hôte peut démarrer la partie",
@@ -202,15 +339,15 @@ export function registerGameHandlers(
         continue;
       }
 
-      const player = gameService.leaveGame(room, playerId, socket.id);
+      const player = gameService.disconnectPlayer(room, playerId, socket.id);
 
       if (!player) {
         continue;
       }
 
-      socket.to(room).emit(GameServerEvent.playerLeft, {
+      socket.to(room).emit(GameServerEvent.playerUpdated, {
         gameId: room,
-        playerId: player.id,
+        player,
       });
     }
   });

@@ -14,13 +14,20 @@ const socket = useSocket();
 const routeGameId = typeof route.query.id === 'string' ? route.query.id : null;
 const pseudo = ref('');
 const askForPseudo = ref(false);
+const isCheckingGame = ref(true);
+const errorMessage = ref('');
 let joinedSocketId: string | undefined;
+
+const canStartGame = computed(() => {
+    return gameStore.players.every((player) => player.connected);
+});
 
 if (routeGameId) {
     gameStore.setGameId(routeGameId);
 }
 
 function redirectToHome(error: string) {
+    gameStore.clearGame();
     router.replace({ path: '/', query: { error } });
 }
 
@@ -53,7 +60,12 @@ function joinGame() {
         gameStore.setGameState(response.game);
         gameStore.setCurrentPlayerId(response.player.id);
         askForPseudo.value = false;
+        isCheckingGame.value = false;
         joinedSocketId = socket.id;
+
+        if (response.game.status !== 'lobby') {
+            router.replace({ path: '/game', query: { id: response.game.id } });
+        }
     });
 }
 
@@ -67,6 +79,7 @@ function checkGameAndJoin() {
         return;
     }
 
+    isCheckingGame.value = true;
     socket.emit(GameClientEvent.syncLobby, { gameId: routeGameId }, (response) => {
         if (!response.success) {
             redirectToHome(response.error);
@@ -79,6 +92,7 @@ function checkGameAndJoin() {
 
         if (!storedPseudo) {
             askForPseudo.value = true;
+            isCheckingGame.value = false;
             return;
         }
 
@@ -87,18 +101,37 @@ function checkGameAndJoin() {
     });
 }
 
-function startGame(){
-    if (!gameStore.gameId || !gameStore.currentPlayerId) {
+function kickPlayer(playerId: string) {
+    if (!gameStore.gameId) {
         return;
     }
 
-    socket.emit(GameClientEvent.start, { gameId: gameStore.gameId }, (response) => {
+    errorMessage.value = '';
+    socket.emit(GameClientEvent.kickPlayer, {
+        gameId: gameStore.gameId,
+        targetPlayerId: playerId,
+    }, (response) => {
         if (!response.success) {
-            console.error(response.error);
+            errorMessage.value = response.error;
+        }
+    });
+}
+
+function startGame(){
+    const activeGameId = gameStore.gameId;
+
+    if (!activeGameId || !gameStore.currentPlayerId) {
+        return;
+    }
+
+    errorMessage.value = '';
+    socket.emit(GameClientEvent.start, { gameId: activeGameId }, (response) => {
+        if (!response.success) {
+            errorMessage.value = response.error ?? "Impossible de démarrer la partie";
             return;
         }
 
-        router.push({ path: '/game', query: { id: gameStore.gameId } });
+        router.push({ path: '/game', query: { id: activeGameId } });
     });
 }
 
@@ -125,8 +158,13 @@ onBeforeUnmount(() => {
 });
 
 useSocketOn(GameServerEvent.playerJoined, (payload) => {
-    console.log('Player joined:', payload.player);
     gameStore.addPlayer(payload.player);
+});
+
+useSocketOn(GameServerEvent.playerUpdated, (payload) => {
+    if (payload.gameId === gameStore.gameId) {
+        gameStore.addPlayer(payload.player);
+    }
 });
 
 useSocketOn(GameServerEvent.playerLeft, (payload) => {
@@ -134,20 +172,28 @@ useSocketOn(GameServerEvent.playerLeft, (payload) => {
         return;
     }
 
-    console.log('Player left:', payload.playerId);
     gameStore.removePlayer(payload.playerId);
+});
+
+useSocketOn(GameServerEvent.kicked, (payload) => {
+    if (payload.gameId === gameStore.gameId) {
+        redirectToHome('Vous avez été exclu de la partie');
+    }
 });
 
 </script>
 
 
 <template>
-    <div v-if="askForPseudo">
+    <p v-if="isCheckingGame">Vérification de la partie…</p>
+    <p v-else-if="errorMessage">{{ errorMessage }}</p>
+
+    <div v-if="!isCheckingGame && askForPseudo">
         <h1>Rejoindre la partie #{{ routeGameId }}</h1>
         <input v-model="pseudo" placeholder="Votre pseudo" @keyup.enter="joinGame" />
         <button @click="joinGame">Rejoindre</button>
     </div>
-    <template v-else>
+    <template v-else-if="!isCheckingGame">
         <div>
             <h1>Id: #{{ gameStore.gameId }}</h1>
         </div>
@@ -157,11 +203,18 @@ useSocketOn(GameServerEvent.playerLeft, (payload) => {
                 <li v-for="player in gameStore.players" :key="player.id">
                     {{ player.pseudo }} <span v-if="player.id == gameStore.currentPlayerId">( you )</span>
                     <span v-if="player.id == gameStore.hostPlayerId">👑</span>
+                    <span v-if="!player.connected">— déconnecté</span>
+                    <button
+                        v-if="gameStore.isHost && player.id !== gameStore.currentPlayerId"
+                        @click="kickPlayer(player.id)"
+                    >
+                        Exclure
+                    </button>
                 </li>
             </ul>
         </div>
     </template>
-    <div v-if="gameStore.currentPlayerId === gameStore.hostPlayerId">
-        <button @click="startGame">Démarrer la partie</button>
+    <div v-if="!isCheckingGame && gameStore.isHost && gameStore.gameState?.status === 'lobby'">
+        <button :disabled="!canStartGame" @click="startGame">Démarrer la partie</button>
     </div>
 </template>

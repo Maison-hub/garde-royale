@@ -11,6 +11,7 @@ import type { Deck } from "~~/server/utils/deck";
 export type Game = Omit<GameState, "playedCards" | "roundPlayerStates"> & {
   deck: Deck;
   hands: Map<string, CardId[]>;
+  excludedPlayerIds: Set<string>;
   roundPlayerStates: Map<string, {
     eliminated: boolean;
     protected: boolean;

@@ -18,6 +18,7 @@ export const GameClientEvent = {
   join: "game:join",
   syncLobby: "game:lobby-sync",
   start: "game:start",
+  kickPlayer: "game:kick-player",
   getCardOptions: "game:get-card-options",
   playCard: "game:play-card",
 } as const;
@@ -28,6 +29,8 @@ export const GameServerEvent = {
   handUpdated: "game:hand-updated",
   playerJoined: "game:player-joined",
   playerLeft: "game:player-left",
+  playerUpdated: "game:player-updated",
+  kicked: "game:kicked",
   started: "game:started",
   turnStarted: "game:turn-started",
 } as const;
@@ -129,6 +132,21 @@ export const getCardOptionsResponseSchema = z.discriminatedUnion("success", [
   }),
 ]);
 
+export const kickPlayerPayloadSchema = z.object({
+  gameId: z.string().min(1),
+  targetPlayerId: z.string().min(1),
+});
+
+export const kickPlayerResponseSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
 export const gameExistsPayloadSchema = z.object({
   gameId: z.string().min(1),
 });
@@ -145,6 +163,8 @@ export type PlayCardPayload = z.infer<typeof playCardPayloadSchema>;
 export type PlayCardResponse = z.infer<typeof playCardResponseSchema>;
 export type GetCardOptionsPayload = z.infer<typeof getCardOptionsPayloadSchema>;
 export type GetCardOptionsResponse = z.infer<typeof getCardOptionsResponseSchema>;
+export type KickPlayerPayload = z.infer<typeof kickPlayerPayloadSchema>;
+export type KickPlayerResponse = z.infer<typeof kickPlayerResponseSchema>;
 export type GameExistsPayload = z.infer<typeof gameExistsPayloadSchema>;
 export type GameExistsResponse = z.infer<typeof gameExistsResponseSchema>;
 export type JoinGamePayload = z.infer<typeof joinGamePayloadSchema>;
@@ -162,6 +182,7 @@ export const gameClientToServerEvents = {
   [GameClientEvent.join]: joinGamePayloadSchema,
   [GameClientEvent.syncLobby]: lobbySyncPayloadSchema,
   [GameClientEvent.start]: gameStartPayloadSchema,
+  [GameClientEvent.kickPlayer]: kickPlayerPayloadSchema,
   [GameClientEvent.getCardOptions]: getCardOptionsPayloadSchema,
   [GameClientEvent.playCard]: playCardPayloadSchema,
 } satisfies SocketEvents;
@@ -184,6 +205,13 @@ export const gameServerToClientEvents = {
   [GameServerEvent.playerLeft]: z.object({
     gameId: z.string(),
     playerId: z.string(),
+  }),
+  [GameServerEvent.playerUpdated]: z.object({
+    gameId: z.string(),
+    player: playerSchema,
+  }),
+  [GameServerEvent.kicked]: z.object({
+    gameId: z.string(),
   }),
   [GameServerEvent.closed]: z.void(),
   [GameServerEvent.started]: z.object({

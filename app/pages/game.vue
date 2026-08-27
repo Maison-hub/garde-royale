@@ -9,8 +9,10 @@ import type {
 import { useGameStore } from "~/stores/gameStore";
 
 const route = useRoute();
+const router = useRouter();
 const gameStore = useGameStore();
 const socket = useSocket();
+const socketIdWhenPageOpened = socket.id;
 
 const gameId = computed(() => {
   return typeof route.query.id === "string"
@@ -108,6 +110,40 @@ function cancelCard() {
   selectedGuess.value = "";
 }
 
+function kickPlayer(playerId: string) {
+  if (!gameStore.gameId) {
+    return;
+  }
+
+  errorMessage.value = "";
+  socket.emit(GameClientEvent.kickPlayer, {
+    gameId: gameStore.gameId,
+    targetPlayerId: playerId,
+  }, (response) => {
+    if (!response.success) {
+      errorMessage.value = response.error;
+    }
+  });
+}
+
+function goBackThroughLobby() {
+  const routeGameId = typeof route.query.id === "string" ? route.query.id : null;
+
+  if (!routeGameId) {
+    gameStore.clearGame();
+    router.replace({ path: "/", query: { error: "Le code de partie est manquant" } });
+    return;
+  }
+
+  router.replace({ path: "/lobby", query: { id: routeGameId } });
+}
+
+function handleSocketReconnect() {
+  if (!socketIdWhenPageOpened || socket.id !== socketIdWhenPageOpened) {
+    goBackThroughLobby();
+  }
+}
+
 function getPlayerPseudo(playerId: string) {
   return gameStore.players.find((player) => player.id === playerId)?.pseudo ?? "Joueur inconnu";
 }
@@ -133,6 +169,48 @@ useSocketOn(GameServerEvent.turnStarted, (payload) => {
     gameStore.setGameState(payload.game);
     cancelCard();
   }
+});
+
+useSocketOn(GameServerEvent.playerUpdated, (payload) => {
+  if (payload.gameId === gameStore.gameId) {
+    gameStore.addPlayer(payload.player);
+  }
+});
+
+useSocketOn(GameServerEvent.playerLeft, (payload) => {
+  if (payload.gameId === gameStore.gameId) {
+    gameStore.removePlayer(payload.playerId);
+  }
+});
+
+useSocketOn(GameServerEvent.kicked, (payload) => {
+  if (payload.gameId !== gameStore.gameId) {
+    return;
+  }
+
+  gameStore.clearGame();
+  router.replace({
+    path: "/",
+    query: { error: "Vous avez été exclu de la partie" },
+  });
+});
+
+onMounted(() => {
+  const routeGameId = typeof route.query.id === "string" ? route.query.id : null;
+  const hasCorrectGame = routeGameId
+    && gameStore.gameState?.id === routeGameId
+    && gameStore.currentPlayerId;
+
+  if (!hasCorrectGame) {
+    goBackThroughLobby();
+    return;
+  }
+
+  socket.on("connect", handleSocketReconnect);
+});
+
+onBeforeUnmount(() => {
+  socket.off("connect", handleSocketReconnect);
 });
 </script>
 
@@ -169,8 +247,17 @@ useSocketOn(GameServerEvent.turnStarted, (payload) => {
           {{ player.pseudo }}
           <span v-if="player.id === gameStore.currentPlayerId">(vous)</span>
           <span v-if="player.id === gameStore.hostPlayerId">(hôte)</span>
+          <span v-if="!player.connected">— déconnecté</span>
           <span v-if="getPlayerState(player.id)?.eliminated">— éliminé</span>
           <span v-else-if="getPlayerState(player.id)?.protected">— protégé</span>
+          <button
+            v-if="gameStore.isHost
+              && player.id !== gameStore.currentPlayerId
+              && gameStore.gameState?.roundWinnerIds.length === 0"
+            @click="kickPlayer(player.id)"
+          >
+            Exclure
+          </button>
         </li>
       </ul>
     </section>

@@ -11,6 +11,8 @@ import {
   type GetCardOptionsResponse,
   type JoinGamePayload,
   type JoinGameResponse,
+  type KickPlayerPayload,
+  type KickPlayerResponse,
   type LobbySyncPayload,
   type LobbySyncResponse,
   type PlayCardPayload,
@@ -48,6 +50,10 @@ export type ClientToServerSocketEvents = {
   [GameClientEvent.start]: (
     payload: { gameId: string },
     callback: (response: { success: boolean; error?: string }) => void,
+  ) => void;
+  [GameClientEvent.kickPlayer]: (
+    payload: KickPlayerPayload,
+    callback: (response: KickPlayerResponse) => void,
   ) => void;
   [GameClientEvent.getCardOptions]: (
     payload: GetCardOptionsPayload,
