@@ -65,6 +65,33 @@ export function registerGameHandlers(
     });
   });
 
+  socket.on(GameClientEvent.syncLobby, (payload, callback) => {
+    const result = validateSocketEvent(GameClientEvent.syncLobby, payload);
+
+    if (!result.success) {
+      callback({
+        success: false,
+        error: "L'identifiant de la partie est invalide",
+      });
+      return;
+    }
+
+    const game = gameService.getGame(result.data.gameId);
+
+    if (!game) {
+      callback({
+        success: false,
+        error: "La partie n'existe pas",
+      });
+      return;
+    }
+
+    callback({
+      success: true,
+      game: toGameState(game),
+    });
+  });
+
   socket.on(GameClientEvent.join, (payload, callback) => {
     const result = validateSocketEvent(GameClientEvent.join, payload);
 

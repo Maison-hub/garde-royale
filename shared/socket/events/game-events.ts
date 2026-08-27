@@ -10,6 +10,7 @@ export const GameClientEvent = {
   close: "game:close",
   exists: "game:exists",
   join: "game:join",
+  syncLobby: "game:lobby-sync",
   start: "game:start",
   playCard: "game:play-card",
 } as const;
@@ -52,6 +53,21 @@ export const joinGameResponseSchema = z.discriminatedUnion("success", [
     success: z.literal(true),
     game: gameStateSchema,
     player: playerSchema,
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
+export const lobbySyncPayloadSchema = z.object({
+  gameId: z.string().min(1),
+});
+
+export const lobbySyncResponseSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+    game: gameStateSchema,
   }),
   z.object({
     success: z.literal(false),
@@ -106,6 +122,8 @@ export type GameExistsPayload = z.infer<typeof gameExistsPayloadSchema>;
 export type GameExistsResponse = z.infer<typeof gameExistsResponseSchema>;
 export type JoinGamePayload = z.infer<typeof joinGamePayloadSchema>;
 export type JoinGameResponse = z.infer<typeof joinGameResponseSchema>;
+export type LobbySyncPayload = z.infer<typeof lobbySyncPayloadSchema>;
+export type LobbySyncResponse = z.infer<typeof lobbySyncResponseSchema>;
 
 /**
  * Événements de partie envoyés par le client au serveur.
@@ -115,6 +133,7 @@ export const gameClientToServerEvents = {
   [GameClientEvent.close]: z.void(),
   [GameClientEvent.exists]: gameExistsPayloadSchema,
   [GameClientEvent.join]: joinGamePayloadSchema,
+  [GameClientEvent.syncLobby]: lobbySyncPayloadSchema,
   [GameClientEvent.start]: gameStartPayloadSchema,
   [GameClientEvent.playCard]: playCardPayloadSchema,
 } satisfies SocketEvents;

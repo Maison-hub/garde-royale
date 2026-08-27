@@ -67,11 +67,13 @@ function checkGameAndJoin() {
         return;
     }
 
-    socket.emit(GameClientEvent.exists, { gameId: routeGameId }, (response) => {
-        if (!response.exists) {
-            redirectToHome("La partie n'existe pas");
+    socket.emit(GameClientEvent.syncLobby, { gameId: routeGameId }, (response) => {
+        if (!response.success) {
+            redirectToHome(response.error);
             return;
         }
+
+        gameStore.setGameState(response.game);
 
         const storedPseudo = getStoredPlayerPseudo();
 

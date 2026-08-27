@@ -9,6 +9,8 @@ import {
   type GameExistsResponse,
   type JoinGamePayload,
   type JoinGameResponse,
+  type LobbySyncPayload,
+  type LobbySyncResponse,
   type PlayCardPayload,
   type PlayCardResponse,
 } from "./events/game-events";
@@ -36,6 +38,10 @@ export type ClientToServerSocketEvents = {
   [GameClientEvent.join]: (
     payload: JoinGamePayload,
     callback: (response: JoinGameResponse) => void,
+  ) => void;
+  [GameClientEvent.syncLobby]: (
+    payload: LobbySyncPayload,
+    callback: (response: LobbySyncResponse) => void,
   ) => void;
   [GameClientEvent.start]: (
     payload: { gameId: string },
