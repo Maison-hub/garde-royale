@@ -10,7 +10,7 @@ export default defineNuxtConfig({
       websocket: true
     }
   },
-  css: ['~/assets/css/main.css', '~/assets/css/tailwind-theme.css'],
+  css: ['~/assets/css/tailwind-theme.css', '~/assets/css/main.css'],
   vite: {
     plugins: [tailwindcss()]
   },

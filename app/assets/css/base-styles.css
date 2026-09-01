@@ -1,0 +1,47 @@
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    background: var(--bg-page);
+    color: var(--text-body);
+    font-family: var(--font-family-sans);
+    font-synthesis: none;
+    line-height: var(--line-height-normal);
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--gradient-surface);
+  }
+
+  input{
+    border: 1px solid var(--neutral-200);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-value-lg);
+    padding: var(--spacing-2);
+  }
+
+  *:focus {
+    outline: 2px solid var(--border-focus);;
+    outline-offset: 2px;
+  }
+  
+  button {
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-value-lg);
+    padding: var(--spacing-2);
+    border: none;
+    padding: var(--spacing-2) var(--spacing-4);
+  }
+  button.primary{
+    background-color: var(--brand-default);
+    color: var(--brand-foreground);
+  }
+}

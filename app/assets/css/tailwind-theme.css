@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Chopin Script";
+  src: url("/fonts/ChopinScript.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   /* BRAND */
   --color-brand: var(--brand-default);
@@ -64,24 +72,25 @@
   --background-image-card: var(--gradient-card);
 
   /* SHADOWS */
-  --shadow-sm: var(--shadow-sm);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-brand: var(--shadow-brand);
+  --shadow-sm: var(--shadow-value-sm);
+  --shadow-md: var(--shadow-value-md);
+  --shadow-lg: var(--shadow-value-lg);
+  --shadow-xl: var(--shadow-value-xl);
+  --shadow-brand: var(--shadow-value-brand);
 
   /* RADIUS */
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
-  --radius-2xl: var(--radius-2xl);
-  --radius-3xl: var(--radius-3xl);
-  --radius-full: var(--radius-full);
+  --radius-sm: var(--radius-value-sm);
+  --radius-md: var(--radius-value-md);
+  --radius-lg: var(--radius-value-lg);
+  --radius-xl: var(--radius-value-xl);
+  --radius-2xl: var(--radius-value-2xl);
+  --radius-3xl: var(--radius-value-3xl);
+  --radius-full: var(--radius-value-full);
 
   /* TYPOGRAPHY */
   --font-sans: var(--font-family-sans);
   --font-mono: var(--font-family-mono);
+  --font-royale: "Chopin Script", cursive;
   --text-xs: var(--font-size-xs);
   --text-sm: var(--font-size-sm);
   --text-base: var(--font-size-base);
@@ -90,41 +99,32 @@
   --text-2xl: var(--font-size-2xl);
   --text-3xl: var(--font-size-3xl);
   --text-4xl: var(--font-size-4xl);
-  --font-weight-normal: var(--font-weight-normal);
-  --font-weight-medium: var(--font-weight-medium);
-  --font-weight-bold: var(--font-weight-bold);
-  --font-weight-black: var(--font-weight-black);
-  --line-height-none: var(--line-height-none);
-  --line-height-tight: var(--line-height-tight);
-  --line-height-snug: var(--line-height-snug);
-  --line-height-normal: var(--line-height-normal);
-  --line-height-relaxed: var(--line-height-relaxed);
-  --line-height-loose: var(--line-height-loose);
+  --font-weight-normal: var(--font-weight-value-normal);
+  --font-weight-medium: var(--font-weight-value-medium);
+  --font-weight-bold: var(--font-weight-value-bold);
+  --font-weight-black: var(--font-weight-value-black);
+  --line-height-none: var(--line-height-value-none);
+  --line-height-tight: var(--line-height-value-tight);
+  --line-height-snug: var(--line-height-value-snug);
+  --line-height-normal: var(--line-height-value-normal);
+  --line-height-relaxed: var(--line-height-value-relaxed);
+  --line-height-loose: var(--line-height-value-loose);
 
   /* SPACING */
-  --spacing-0: var(--spacing-0);
-  --spacing-1: var(--spacing-1);
-  --spacing-2: var(--spacing-2);
-  --spacing-3: var(--spacing-3);
-  --spacing-4: var(--spacing-4);
-  --spacing-5: var(--spacing-5);
-  --spacing-6: var(--spacing-6);
-  --spacing-8: var(--spacing-8);
-  --spacing-10: var(--spacing-10);
-  --spacing-12: var(--spacing-12);
-  --spacing-16: var(--spacing-16);
-  --spacing-20: var(--spacing-20);
-  --spacing-24: var(--spacing-24);
-  --spacing-32: var(--spacing-32);
-
-  /* COMMON */
-  --base-white: var(--base-white);
-  --base-black: var(--base-black);
-  --selection-background: var(--selection-background);
-  --selection-foreground: var(--selection-foreground);
-  --overlay: var(--overlay);
-  --ring: var(--ring);
-  --skeleton: var(--skeleton);
+  --spacing-0: var(--spacing-value-0);
+  --spacing-1: var(--spacing-value-1);
+  --spacing-2: var(--spacing-value-2);
+  --spacing-3: var(--spacing-value-3);
+  --spacing-4: var(--spacing-value-4);
+  --spacing-5: var(--spacing-value-5);
+  --spacing-6: var(--spacing-value-6);
+  --spacing-8: var(--spacing-value-8);
+  --spacing-10: var(--spacing-value-10);
+  --spacing-12: var(--spacing-value-12);
+  --spacing-16: var(--spacing-value-16);
+  --spacing-20: var(--spacing-value-20);
+  --spacing-24: var(--spacing-value-24);
+  --spacing-32: var(--spacing-value-32);
 
   /* BRAND SHADES */
   --color-brand-50: var(--brand-50);
@@ -219,20 +219,20 @@
   --gradient-card: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
 
   /* SHADOWS */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-brand: 0 0 20px rgb(215 21 21 / 0.2);
+  --shadow-value-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-value-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-value-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-value-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-value-brand: 0 0 20px rgb(215 21 21 / 0.2);
 
   /* RADIUS */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
-  --radius-3xl: 32px;
-  --radius-full: 9999px;
+  --radius-value-sm: 6px;
+  --radius-value-md: 8px;
+  --radius-value-lg: 12px;
+  --radius-value-xl: 16px;
+  --radius-value-2xl: 24px;
+  --radius-value-3xl: 32px;
+  --radius-value-full: 9999px;
 
   /* TYPOGRAPHY */
   --font-family-sans: Inter, system-ui, -apple-system, sans-serif;
@@ -245,32 +245,32 @@
   --font-size-2xl: 24px;
   --font-size-3xl: 30px;
   --font-size-4xl: 36px;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-bold: 700;
-  --font-weight-black: 900;
-  --line-height-none: 1;
-  --line-height-tight: 1.25;
-  --line-height-snug: 1.375;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-  --line-height-loose: 2;
+  --font-weight-value-normal: 400;
+  --font-weight-value-medium: 500;
+  --font-weight-value-bold: 700;
+  --font-weight-value-black: 900;
+  --line-height-value-none: 1;
+  --line-height-value-tight: 1.25;
+  --line-height-value-snug: 1.375;
+  --line-height-value-normal: 1.5;
+  --line-height-value-relaxed: 1.625;
+  --line-height-value-loose: 2;
 
   /* SPACING */
-  --spacing-0: 0px;
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
-  --spacing-20: 80px;
-  --spacing-24: 96px;
-  --spacing-32: 128px;
+  --spacing-value-0: 0px;
+  --spacing-value-1: 4px;
+  --spacing-value-2: 8px;
+  --spacing-value-3: 12px;
+  --spacing-value-4: 16px;
+  --spacing-value-5: 20px;
+  --spacing-value-6: 24px;
+  --spacing-value-8: 32px;
+  --spacing-value-10: 40px;
+  --spacing-value-12: 48px;
+  --spacing-value-16: 64px;
+  --spacing-value-20: 80px;
+  --spacing-value-24: 96px;
+  --spacing-value-32: 128px;
 
   /* COMMON */
   --base-white: #ffffff;
@@ -294,20 +294,6 @@
   --brand-900: hsl(0, 100%, 17%);
   --brand-950: hsl(0, 100%, 14%);
 
-}
-
-@layer base {
-  * { border-color: var(--color-border); }
-  body {
-    background-color: var(--color-bg-page);
-    color: var(--color-text-body);
-    font-family: var(--font-sans);
-  }
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--color-text-heading);
-    font-weight: 700;
-  }
-  a { color: var(--color-text-link); }
 }
 
 @layer utilities {

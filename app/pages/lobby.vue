@@ -185,36 +185,84 @@ useSocketOn(GameServerEvent.kicked, (payload) => {
 
 
 <template>
-    <p v-if="isCheckingGame">Vérification de la partie…</p>
-    <p v-else-if="errorMessage">{{ errorMessage }}</p>
+    <main class="min-h-screen px-4 py-8">
+        <div class="mx-auto flex w-full max-w-md flex-col gap-6">
+            <header class="text-center">
+                <p class="mb-2 text-sm font-bold uppercase tracking-widest text-brand">Salon de jeu</p>
+                <h1 class="mb-0 font-royale text-4xl">Garde Royale</h1>
+            </header>
 
-    <div v-if="!isCheckingGame && askForPseudo">
-        <h1>Rejoindre la partie #{{ routeGameId }}</h1>
-        <input v-model="pseudo" placeholder="Votre pseudo" @keyup.enter="joinGame" />
-        <button @click="joinGame">Rejoindre</button>
-    </div>
-    <template v-else-if="!isCheckingGame">
-        <div>
-            <h1>Id: #{{ gameStore.gameId }}</h1>
-        </div>
-        <div>
-            <h2>Participants</h2>
-            <ul>
-                <li v-for="player in gameStore.players" :key="player.id">
-                    {{ player.pseudo }} <span v-if="player.id == gameStore.currentPlayerId">( you )</span>
-                    <span v-if="player.id == gameStore.hostPlayerId">👑</span>
-                    <span v-if="!player.connected">— déconnecté</span>
+            <section v-if="isCheckingGame" class="rounded-2xl  p-6 text-center ">
+                <p class="m-0 text-text-muted">Vérification de la partie…</p>
+            </section>
+
+            <template v-else>
+                <p v-if="errorMessage" class="m-0 rounded-lg border border-error bg-error-light px-4 py-3 text-sm text-text-heading">
+                    {{ errorMessage }}
+                </p>
+
+                <section v-if="askForPseudo" class="rounded-2xl ">
+                    <h2 class="text-xl">Rejoindre la partie</h2>
+                    <p class="mb-5 text-sm text-text-muted">Partie #{{ routeGameId }}</p>
+                    <div class="flex flex-col gap-3">
+                        <input v-model="pseudo" placeholder="Votre pseudo" @keyup.enter="joinGame" />
+                        <button class="w-full py-3" @click="joinGame">Rejoindre</button>
+                    </div>
+                </section>
+
+                <section v-else class="rounded-2xl  p-6 flex flex-col gap-4">
+                    <div class="mb-6 flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="mb-1 text-xl">
+                                Partie 
+                                <span class="font-bold">
+                                    # {{ gameStore.gameId }}
+                                </span>
+                            </h2>
+                            <p class="m-0 text-sm text-text-muted">En attente des joueurs</p>
+                        </div>
+                        <span class="rounded-full bg-brand-subtle px-3 py-1 text-xs font-bold text-brand-foreground">
+                            {{ gameStore.players.length }} joueur<span v-if="gameStore.players.length !== 1">s</span>
+                        </span>
+                    </div>
+
+                    <div>
+                        <h3 class="mb-3 text-base">Participants</h3>
+                        <ul class="m-0 flex list-none flex-col gap-2 p-0">
+                            <li
+                                v-for="player in gameStore.players"
+                                :key="player.id"
+                                class="flex items-center justify-between gap-3 rounded-lg  bg-bg-sunken px-4 py-3"
+                            >
+                                <div class="min-w-0">
+                                    <p class="m-0 truncate font-bold text-text-heading">
+                                        {{ player.pseudo }}
+                                        <span v-if="player.id === gameStore.currentPlayerId" class="font-normal text-text-muted">(vous)</span>
+                                        <span v-if="player.id === gameStore.hostPlayerId">👑</span>
+                                    </p>
+                                    <p v-if="!player.connected" class="m-0 text-xs text-text-muted">Déconnecté</p>
+                                </div>
+                                <button
+                                    v-if="gameStore.isHost && player.id !== gameStore.currentPlayerId"
+                                    class="min-h-0 shrink-0 px-2 py-1 rounded-full font-bold text-xs bg-brand text-white"
+                                    @click="kickPlayer(player.id)"
+                                >
+                                    Exclure
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
                     <button
-                        v-if="gameStore.isHost && player.id !== gameStore.currentPlayerId"
-                        @click="kickPlayer(player.id)"
+                        v-if="gameStore.isHost && gameStore.gameState?.status === 'lobby'"
+                        class="primary "
+                        :disabled="!canStartGame"
+                        @click="startGame"
                     >
-                        Exclure
+                        Démarrer la partie
                     </button>
-                </li>
-            </ul>
+                </section>
+            </template>
         </div>
-    </template>
-    <div v-if="!isCheckingGame && gameStore.isHost && gameStore.gameState?.status === 'lobby'">
-        <button :disabled="!canStartGame" @click="startGame">Démarrer la partie</button>
-    </div>
+    </main>
 </template>
