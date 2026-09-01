@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { defineEventHandler } from "h3";
 import { registerGameHandlers } from "../socket/handlers/gameEventHandler";
 import type { ClientToServerSocketEvents, ServerToClientSocketEvents } from "~~/shared/socket/events";
+import { registerTurnHandlers } from "../socket/handlers/roundEventsHandlers";
 
 export default defineNitroPlugin((nitroApp: NitroApp) => {
   const engine = new Engine();
@@ -13,6 +14,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
   io.on("connection", (socket) => {
     registerGameHandlers(io, socket);
+    registerTurnHandlers(io, socket);
   });
 
   nitroApp.router.use("/socket.io/", defineEventHandler({
